@@ -1,0 +1,82 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+When this rule is mentioned use this documentation:
+
+# Annotations
+
+It is possible to add annotations in the fields attaching metadata to the Types definitions.
+The supported annotations are: Label, Description, and SemanticTerms. These are all defined in
+the [com::mulesoft::connectivity::decorator::Annotations](mdc:../../connectivity-language/src/main/dw/com/mulesoft/connectivity/decorator/Annotations.dwl)
+module.
+
+These annotations add metadata in a similar way to the `<~` operator in DataWeave (the `<~` operator _replaces_ while
+these annotations _add_). There's an additionally supported kind of metadata-annotated information and that is `format`.
+The list of supported formatted types is available at the [com::mulesoft::connectivity::Types](mdc:../../connectivity-language/src/main/dw/com/mulesoft/connectivity/Types.dwl) module.
+
+## Label
+
+Add a label annotation in a Type like this:
+```
+type CreateTicketType = {
+    projectId: @Label(value = "Project ID") String,
+    ticketType: String,
+}
+```
+
+## Description
+
+Add a description annotation in a Type like this:
+```
+type CreateTicketType = {
+    projectId: String,
+    ticketType: @Description(value = "The Type of the project to be created") String,
+}
+```
+
+## Format
+
+The supported Format annotations are: "date" and "date-time" for Strings,
+and "integer", "float", "double", "int32" and "int64" for Numbers.
+Instead of using a format metadata annotation (like `String <~ { format: "date-time" }`) use the equivalent formatted
+type defined in the `Types` module (like `LWDateTime`)
+
+An example request structure using formatted types follows:
+```
+type CreateTicketType = {
+    projectId: String,
+    ticketType: String,
+    ticketDate: LWDate,
+    createdAt: LWDateTime,
+    amount: Integer,
+    size: Float,
+    price: Double,
+    count: Int32,
+    total: Int64
+}
+```
+
+## Semantic Terms
+
+If using the existing Auth Schemas defined in [Http.dwl](mdc:https:/github.com/mulesoft/interpreted-connectivity-link-weave/blob/develop/connectivity-language/src/main/dw/com/mulesoft/connectivity/transport/Http.dwl) the fields will have the corresponding annotations,
+you won't have to declare it. If using a custom Type, you will have to add the semanticTerms annotations.
+Look at [connections](mdc:connections.md) for more info.
+```
+type BasicAuthSchema = {
+    username: @SemanticTerms(value = ["username"]) String,
+    password: @SemanticTerms(value = ["password"]) String
+}
+
+type BearerAuthSchema = {
+    token: @SemanticTerms(value = ["secretToken"]) String
+}
+
+type ApiKeyAuthSchema = {|
+    apiKey: @SemanticTerms(value = ["apiKey"]) String
+|}
+
+type OAuth2AuthSchema = {|
+    accessToken: @SemanticTerms(value = ["password"]) String
+|}

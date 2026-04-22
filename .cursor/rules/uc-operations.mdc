@@ -1,0 +1,585 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+When this rule is mentioned use this documentation:
+
+# Writing and adding Operations to a connector
+
+Operations are the heart of a connectivity project. Once a connection is
+established, the operation list enables users to integrate the described service
+into their environment. Defining new operations is easy: an operation consists
+of a `name` (for internal usage), a `displayName` (the one that users see) and
+an `executor` (the function that runs the operation).
+
+Operation invocations can fail. Successful invocations return a `ResultSuccess`
+while failed ones return a `ResultFailure`. The meaning of failure depends on
+the service in question.
+
+> **Example**
+>
+> Most HTTP services signal failure using 4XX and 5XX status codes, the
+> [HTTP library](#http-operations) will signal an error when it sees those
+> status codes. Still, some APIs will signal errors within their response
+> contents. These APIs always return 2XX status codes.
+>
+> If you are trying to integrate these kinds of APIs, you will need to match
+> on the possible responses of your `request` and signal failure accordingly.
+
+Operations have type `Operation<ArgsT, OkT, ErrorT <: ResultFailure, ConnT>`. Let's explain each
+type parameter separately:
+
+- `ArgsT`: The type of the arguments required for an invocation. It has to be an
+  `Object` type.
+- `OkT`: The resulting value of successful invocations. This means successful
+  invocations will return a `ResultSuccess<OkT>`.
+- `ErrorT`: This means failed invocations will return a `ResultFailure<ErrorValueType, ErrorType>`, 
+  where ErrorValueType is the shape of the error value, and ErrorType describe the kind and categories.
+- `ConnT`: The connection type. This is an `Object` type that describes the
+  contextual information required to invoke this operation.
+
+## Operation example
+
+```dataweave
+type DuplicateParams = {
+    x: Number
+}
+
+var myOperation: Operation<DuplicateParams, Number, ResultFailure<Nothing, Error>, {}> = {
+    name: "duplicate",
+    displayName: "2 times X",
+    executor: (args: DuplicateParams, connectionInstance) ->
+      success(args.x * 2)
+}
+```
+
+# The `decorator::Operation` module
+
+Once you make an operation, there are useful tools provided to transform it into
+a nicer one. The platform independent decorations are located on the
+[`com::mulesoft::connectivity::decorator::Operation`] and provide useful ways to
+append additional code before or after an operation invocation.
+
+
+## Module Summary
+- `mapInputOperation(operation, mapper)`: Applies a function before the
+  operation invocation. This function adapts some other input to the type
+  expected by the operation.
+- `mapInputPaginatedOperation(operation, mapper)`: Applies a function before the
+  paginated operation invocation. This function adapts some other input to the type
+  expected by the operation.
+- `mapOutputSuccessOperation(operation, mapper)`: Applies a function to the
+  output of successful invocations. This function transforms the output into a
+  more suitable shape.
+- `mapOutputFailureOperation(operation, mapper)`: Applies a function to the
+  output of failed invocations. This function transforms the errors into a more
+  suitable shape.
+- `mapOutputFailurePaginatedOperation(operation, mapper)`: Applies a function to the
+  output of failed invocations of paginated operations. This function transforms the 
+  errors into a more suitable shape.
+- `paginate(operation, strategy)`: Applies a pagination strategy to the output
+  of successful invocations. This pagination strategy is a function that
+  receives both the original parameterization and the successful result and
+  creates a `Page` from there.
+
+# HTTP Operations
+
+HTTP operations are one of the most common kinds of operations. For this reason
+they have a dedicated module [`com::mulesoft::connectivity::transport::Http`]. This
+module defines a common shape for all HTTP operations and utility functions for
+encoding parameters and making requests.
+
+The `HttpOperation<ArgsT, OkT, ErrorT, ConnT>` type shares the same shape as the
+operation type. There are three big differences:
+- `ArgsT` has to be a subtype of `HttpRequestType`.
+- `OkT` and `ErrorT` have to be subtypes of the `HttpResponse` type (the
+  results have headers, body, cookies, etc.).
+- `ConnT` has to be a subtype of `HttpConnection`.
+
+In order to honor how API spec parameters are defined, the `HttpRequestType` was created. This object 
+defines the elemental parameters for all HTTP operations, which are:
+- Query parameters
+- URI/path parameters
+- Header parameters
+- Cookie parameters
+- A body
+
+An HttpRequestType object must bring a query, header, and cookie fields.
+These can be empty if the HTTP Operation doesn’t require this information.
+On the other hand, URI and body are optional.
+This definition is a way of generalization for all the HTTP operations which they have always
+the same global input structure: query, URI, header cookie and body parameters.
+
+## HttpOperation example
+
+Imagine the following endpoint:
+
+http://www.mulesoft.com/user/{userId}
+
+The HTTP operation is represented as:
+
+```dataweave
+type GetUserByIdRequest = HttpRequestType<{|
+                                           uri: { userId: Number },
+                                           query: {},
+                                           headers: {},
+                                           cookie: {}
+                                         |}>
+
+@OperationElement()
+var GetUserByIdEndpoint :
+        HttpOperation<GetUserByIdRequest, Any, Any, HttpConnection> =
+        {
+        name: "getUserByIdEndpoint",
+        displayName: "Get user by id",
+        executor: (parameter, connection) ->
+         success(connection({method: "GET", path: "/user/" ++ parameter.uri.userId})
+            as HttpResponse<Any>)
+        }
+```
+
+The body and URI fields are not needed in the request structure, while query, headers and cookie have to be declared,
+even if the API spec definition doesn't mention them.
+Lastly, ```parameter``` is type of `GetUserByIdRequest` so to get each parameter value,
+a reference to the attributes is needed, see how ```parameter.uri.userId``` is used.
+
+
+The `request` function from `dw::io::http::Client` is the preferred way to
+perform requests. If you need to serialize complex values into query parameters,
+consider using the `addQueryParameters` function.
+
+## Encoding in HttpOperations
+
+Some parameters need to be encoded into a suitable string representation 
+before sending them in an HTTP request. The encoding configuration should be
+specified for each parameter that needs. For example, an array
+query parameter, must be encoded when the final URI is built, it cannot be
+sent as an array itself. Similar scenarios are handled for URI, header and
+cookie parameters. The main difference between them is their 
+possible encoding configuration. See https://spec.openapis.org/oas/latest.html#style-values
+to check each possible encoding configuration for each parameter.
+
+### Encoding example
+
+See the following http operation example
+
+```dataweave
+type GetUsersByCompaniesIdEndpointRequest = HttpRequestType<{|
+                                           uri: { companiesId: Array<Number> },
+                                           query: { users: Array<Number> },
+                                           headers: { customHeader: CustomAuth},
+                                           cookie: { customCookie: CustomAuth}
+                                         |}>
+
+type CustomAuth = {username: String, pass: String}
+
+@OperationElement()
+var getUsersByCompaniesIdEndpoint :
+        HttpOperation<GetUsersByCompaniesIdEndpointRequest, Any, Any, HttpConnection> =
+        {
+        name: "getUserByIdEndpoint",
+        displayName: "Get user by id",
+        executor: (parameter, connection) ->
+         success(connection({
+                                    method: "GET",
+                                    path: "/usersByCompaniesId/" ++ serializeUriParam(parameter.uri.companiesId, config:{ style: "simple", explode: false }),
+                                    queryParams: parameter.query update {
+                                        case users at .users -> users <~ { style: "form", explode: true }
+                                    },
+                                    headers: parameter.headers update {
+                                        case customHeader at .customHeader -> serializeHeaders(customHeader, config: {style: "simple", explode: false})
+                                        case Cookie at .Cookie! -> serializeCookies(parameter.cookie update {
+                                            case customCookie at .customCookie -> customCookie <~ { style: "form", explode: false }
+                                        })
+                                    }
+                                    })
+            as HttpResponse<GetUsersByCompanyIdEndpointResponse>)
+        }
+```
+
+### Encoding URI example
+
+According to the example, this is how an URI parameter is encoded. For each
+parameter to be encoded, a call to ```serializeUriParam``` function is needed
+which it needs, the parameter to be encoded and the encoding configuration
+
+```dataweave
+path: "/usersByCompaniesId/" ++ serializeUriParam(parameter.uri.companiesId, config:{ style: "simple", explode: false }),
+```
+
+### Encoding query example
+
+Query parameters are a little bit different, the ```queryParams``` object
+is part of the HTTP request object, the only thing to do here is
+adding metadata to each parameter that needs to be encoded in the ```queryParams```
+object. The encoding process is going to be executed internally before executing the request
+```dataweave
+queryParams: parameter.query update {
+    case users at .users -> users <~ { style: "form", explode: true }
+}
+```
+
+### Encoding header and cookie example
+
+Similarly to query parameters, ```headers``` object is part of the http request object.
+The main difference here is that a call to each serialize function is needed.
+All headers except the ```Cookie``` header has to be encoded calling to the
+```serializeHeaders``` function, which needs the parameter to be encoded and the
+encoding configuration.
+The ```Cookie``` header has a different behavior, it can include many parameters, so
+a call to ```serializeCookies``` function is needed. This function requires
+the cookie object, followed by the information for each parameter that needs to be encoded.
+
+
+```dataweave
+headers: parameter.headers update {
+    case customHeader at .customHeader -> serializeHeaders(customHeader, config: {style: "simple", explode: false})
+    case Cookie at .Cookie! -> serializeCookies(parameter.cookie update {
+        case customCookie at .customCookie -> customCookie <~ { style: "form", explode: false }
+    })
+}
+```
+
+## Module Summary
+
+- `HttpRequestBuilder`: Base type for HTTP Connection instances
+- `HttpResponse<T>`: Type for HTTP responses with `T` at their bodies
+- `HttpAuthenticationType`: Authentication type for HTTP connections
+- `HttpConnection<ArgsT, AuthenticationType>`: Type for HTTP connection
+  descriptions that require an `ArgsT` parameter in order to connect and have
+  the specified `AuthenticationType`
+- `BasicHttpConnection<ArgsT>`: Type for HTTP connections using the
+  [basic authentication scheme] that require an `ArgsT` parameter in order to
+  connect
+- `defineBasicHttpConnection(validate, mapper)`: Defines a
+  `BasicHttpConnection` that uses `validate` in order to check credential
+  validity and `mapper` to extract the authentication schema from the
+  connection parameterization
+- `defineBearerHttpConnection(validate, mapper)`: Defines a
+  `BearerHttpConnection` that uses `validate` in order to check credential
+  validity and `mapper` to extract the authentication schema from the
+  connection parameterization
+- `BaseAuthSchema`: Base type for all authentication schemas
+- `BasicAuthSchema`: Type describing the information needed for the
+  [basic authentication scheme]
+- `basicAuth(schema)`: Creates a connection instance (`HttpRequestBuilder`)
+  from a `BasicAuthSchema`
+- `BearerAuthSchema`: Type describing the information needed for the
+  [bearer authentication scheme]
+- `bearerAuth(schema)`: Create a connection instance (`HttpRequestBuilder`)
+  from a `BearerAuthSchema`
+- `HttpOperation<ArgsT, OkT, ErrorT, ConnT>`: Type for HTTP operations
+- `parseQueryParameters(uri)`: Parses the query parameters from a given URI
+- `addQueryParameters(resource, queryParams, config?)`: Serialize
+  `queryParams` according to the optional config and add them to the `resource`
+  specified
+
+[`com::mulesoft::connectivity::decorator::Operation`]: ../../connectivity-language/src/main/dw/com/mulesoft/connectivity/decorator/Operation.dwl
+[`com::mulesoft::connectivity::transport::Http`]: ../../connectivity-language/src/main/dw/com/mulesoft/connectivity/transport/Http.dwl
+[basic authentication scheme]: https://datatracker.ietf.org/doc/html/rfc7617
+[bearer authentication scheme]: https://datatracker.ietf.org/doc/html/rfc6750
+
+# Paginated Operations
+
+Given an Operation, you can decorate it using the `paginate` method, defining 
+a strategy to make a Paginated Operation. The new operation should return a 
+result of type `Page`
+
+The supported strategies are:
+- `Page Number Pagination`: For APIs that paginate based on a query parameter that represents the page number to get.
+- `Offset Pagination`: For APIs that paginate based on an offset query parameter that requests results starting from result number N.
+- `Marker Pagination`: For APIs that paginate based on a marker query parameter that points to a position in the dataset to return.
+- `Hypermedia Pagination`: For APIs that paginate based on retrieving the URL of the next page in the response body or in the link header.
+This strategy only supports the cases in which the next URL has the same host name and path of the current URL but changing the query parameters.
+
+## Page Number Pagination example
+If a SaaS has the following endpoint:
+http://www.mulesoft.com/users?page=X
+
+The Operation is represented as:
+```dataweave
+var getUsers : Operation<{page: Number}, HttpResponse<{items: Array<{id: String, name: String, email: String}>}>, ResultFailure<HttpResponse, Error>, HttpConnection> = {
+    name: "getUsers",
+    displayName: "Get Users",
+    executor: (parameter, connection) -> do {
+        var response = connection({method: 'GET', path: "/users" ++ "?page=" ++ parameter.page})
+        ---
+        if (response.status == 200)
+          success(response as HttpResponse<{items: Array<{id: String, name: String, email: String}>}>)
+        else
+          failure(response)
+    }
+}
+```
+To create a paginated operation, you will have to do:
+```dataweave
+@OperationElement()
+var getUsersPaginated = pageNumberPaginated(
+  getUsers,
+  (page) -> page.body.items default [],
+  (param) -> param.page default 0,
+  (param, pageNumber) -> (param update { case page at .page! -> pageNumber })
+)
+```
+
+## Offset Pagination example
+
+If a SaaS has the following endpoint:
+http://www.mulesoft.com/users?offset=X&limit=Y
+
+The Operation is represented as:
+```dataweave
+var getUsers : Operation<{from: Number, limit: Number}, HttpResponse<{items: Array<{id: String, name: String, email: String}>}>, ResultFailure<HttpResponse, Error>, HttpConnection> = {
+    name: "getUsers",
+    displayName: "Get Users",
+    executor: (parameter, connection) -> do {
+        var response = connection({method: 'GET', path: "/users" ++ "?from=" ++ parameter.from ++ "&limit=" ++ parameter.limit})
+        ---
+        if (response.status == 200)
+          success(response as HttpResponse<{items: Array<{id: String, name: String, email: String}>}>)
+        else
+          failure(response)
+    }
+}
+```
+To create a paginated operation you will have to do:
+```dataweave
+@OperationElement()
+var getUsersPaginated = offsetPaginated(
+  getUsers,
+  (page) -> page.body.items default [],
+  (param) -> param.from default 0,
+  (param, offset) -> (param update { case from at .from! -> offset })
+)
+```
+## Marker Pagination example
+
+If a SaaS has the following endpoint:
+http://www.mulesoft.com/users?markerToken=X&limit=Y
+
+The Operation is represented as:
+```dataweave
+var getUsers : Operation<{markerToken?: String, limit: Number}, HttpResponse<{items: Array<{id: String, name: String, email: String}>, markerToken?: String}>, ResultFailure<HttpResponse, Error>, HttpConnection> = {
+    name: "getUsers",
+    displayName: "Get Users",
+    executor: (parameter, connection) -> do {
+        var markerParams = if(!isEmpty(parameter.markerToken)) ("?markerToken=" ++ parameter.markerToken! ++ "&limit=" ++ parameter.limit) else ("?limit=" ++ parameter.limit)
+        var response = connection({method: 'GET', path: "/users" ++ markerParams})
+        ---
+        if (response.status == 200)
+          success(response as HttpResponse<{items: Array<{id: String, name: String, email: String}>, markerToken?: String}>)
+        else
+          failure(response)
+    }
+}
+```
+To create a paginated operation, you will have to do:
+```dataweave
+@OperationElement()
+var getUsersPaginated = markerPaginated(
+  getUsers,
+  (page) -> page.body.items default [],
+  (page) -> page.body.markerToken default "",
+  (param, marker) -> (param update { case markerToken at .markerToken! -> marker })
+)
+
+var getUsersPaginatedCustom = getUsersPaginated mapInputOperation (param: {limit: Number}) -> param // A mapInputOperation to define the input type operation to expose only
+                                                       // limit: Number but (not closed) the mapping propagates the input
+                                                       // therefore as the args is generated with a markerToken this one is
+                                                       // sent to the base (decorated) operation but not exposed to consumers
+                                                       // of this operation.
+```
+## Hypermedia Pagination example
+
+### Always the same endpoint
+
+If a SaaS has the following endpoint:
+http://www.mulesoft.com/users?pageMarker=X&limit=Y and the response body as a field named `nextUrl`
+
+The Operation is represented as:
+```dataweave
+var getUsers : Operation<{pageMarker?: String, limit?: Number}, HttpResponse<{items: Array<{id: String, name: String, email: String}>, nextUrl?: String}>, ResultFailure<HttpResponse, Error>, HttpConnection> = {
+    name: "getUsers",
+    displayName: "Get Users",
+    executor: (parameter, connection) -> do {
+        var response = connection({method: 'GET', path: "/users?pageMarker=" ++ (parameter.pageMarker default "") ++ "&limit=" ++ (parameter.limit default "")})
+        ---
+        if (response.status == 200)
+          success(response as HttpResponse<{items: Array<{id: String, name: String, email: String}>, nextUrl?: String}>)
+        else
+          failure(response)
+    }
+}
+```
+To create a paginated operation you will have to do:
+```dataweave
+@OperationElement()
+var getUsersPaginated = hypermediaPaginated(
+   getUsers,
+   (page) -> page.body.items default [],
+   (page) -> page.body.nextUrl  default "",
+   (param, nextUrl) -> parseQueryParameters(nextUrl)
+)
+```
+See how here the last lambda parameter defines the operation input parameter. In this example is only
+defined by the `{pageMarker?: String, limit?: Number}` structure. Using the util `parseQueryParameters`, we are extracting
+the query parameters from the `nextUrl` value, generating the same input operation parameter. There are other cases where the input
+parameter defined by the operation is a complex object, so what is needed there is to define it as it is defined by the operation:
+
+```dataweave
+type OperationInputType = {uri: Object, query: Object}
+@OperationElement()
+var getUsersPaginated = hypermediaPaginated(
+   getUsers,
+   (page) -> page.body.items default [],
+   (page) -> page.body.nextUrl  default "",
+   (param, nextUrl) -> {uri: param.uri, query: parseQueryParameters(nextUrl) } 
+)
+```
+
+### Different endpoint on second call
+If a SaaS has the following endpoints:
+http://www.mulesoft.com/users and http://www.mulesoft.com/more/{queryLocator} and the response body as a field named `nextUrl`
+
+The Operations are represented as:
+```dataweave
+var getUsers : Operation<{}, HttpResponse<{items: Array<{id: String, name: String, email: String}>, nextUrl?: String}>, ResultFailure<HttpResponse, Error>, HttpConnection> = {
+    name: "getUsers",
+    displayName: "Get Users",
+    executor: (parameter, connection) -> do {
+        var response = connection({method: 'GET', path: "/users"})
+        ---
+        if (response.status == 200)
+          success(response as HttpResponse<{items: Array<{id: String, name: String, email: String}>, nextUrl?: String}>)
+        else
+          failure(response)
+    }
+}
+```
+
+```dataweave
+var getMore : Operation<{queryLocator: String}, HttpResponse<{items: Array<{id: String, name: String, email: String}>, nextUrl?: String}>, ResultFailure<HttpResponse, Error>, HttpConnection> = {
+    name: "getMore",
+    displayName: "Get More",
+    executor: (parameter, connection) -> do {
+        var response = connection({method: 'GET', path: "/more/" ++ parameter.queryLocator})
+        ---
+        if (response.status == 200)
+          success(response as HttpResponse<{items: Array<{id: String, name: String, email: String}>, nextUrl?: String}>)
+        else
+          failure(response)
+    }
+}
+```
+
+To create a paginated operation you will have to do:
+
+```dataweave
+var getMorePaginated = getMore paginated (param, page) -> {
+    items: page.body.items default [],
+    (nextPage: {
+        args: {queryLocator: (splitBy(page.body.nextUrl, "/")[-1] default "")}
+    }) if (!isEmpty(page.body.items) and !isEmpty(page.body.nextUrl))
+}
+
+var getUsersPaginated = paginatedWithNextPageOp(getUsers, getMorePaginated, (param, page) -> {
+    items: page.body.items default [],
+    (nextPage: {
+        args: {queryLocator: (splitBy(page.body.nextUrl, "/")[-1] default "")}
+    }) if (!isEmpty(page.body.items) and !isEmpty(page.body.nextUrl))
+})
+```
+
+# Describing Errors
+Sometimes operations can fail in different ways, for example when connecting to
+Http Endpoints, an external service can fail with several status codes.
+
+```dataweave
+var getUsers : Operation<{}, HttpResponse<{items: Array<{id: String, name: String, email: String}>, nextUrl?: String}>, ResultFailure<HttpResponse, Error>, HttpConnection> = {
+    name: "getUsers",
+    displayName: "Get Users",
+    executor: (parameter, connection) -> do {
+        var response = connection({method: 'GET', path: "/users"})
+        ---
+        if (response.status == 200)
+          success(response as HttpResponse<{items: Array<{id: String, name: String, email: String}>, nextUrl?: String}>)
+        else
+          failure(response)
+    }
+}
+```
+Describing an operation in that way, will provide the user only the information that something failed and will return a `HttpResponse<Any>` as value, but the error kind and categories will be empty.
+
+### Describing Error Types
+If we want to provide the operation user the capability to handle certain Error Types, for example when an 404 occurs, we have to redefine the Operation.
+
+```dataweave
+type Error404 = Error<"404", "CLIENT_ERROR">
+
+var Error404Instance : Error404 = {
+  kind : "404",
+  categories : ["CLIENT_ERROR"]
+}
+
+var getUsers : Operation<{}, HttpResponse<{items: Array<{id: String, name: String, email: String}>, nextUrl?: String}>, ResultFailure<String, Error404 | Error>, HttpConnection> = {
+    name: "getUsers",
+    displayName: "Get Users",
+    executor: (parameter, connection) -> do {
+        var response = connection({method: 'GET', path: "/users"})
+        ---
+        if (response.status == 200)
+          success(response)
+        else if (response.status == 404) 
+          failure("404", Error404Instance)  
+        else
+          failure("unknown error")
+    }
+}
+```
+With this change, the operation consumer will be able to handle the 404 error kind, in runtime if the operation fail with 404, the error kind will be populated with 404
+
+### Describing Multiple Error Values
+
+Some External Systems depending on the Error Type, for example, 4XX or 5XX return different messages.
+
+```dataweave
+type Error404 = Error<"404", "CLIENT_ERROR">
+
+var Error404Instance : Error404 = {
+  kind : "404",
+  categories : ["CLIENT_ERROR"]
+}
+
+type Error500 = Error<"500", "SERVER_ERROR">
+
+var Error500Instance : Error500 = {
+  kind: "500",
+  categories: ["SERVER_ERROR"]
+}
+
+type 404ErrorMessage = {
+  message : String
+}
+
+type 500ErrorMessage = {
+  errorCode: Number 
+}
+
+var getUsers : Operation<{}, HttpResponse<{items: Array<{id: String, name: String, email: String}>, nextUrl?: String}>, ResultFailure<404ErrorMessage, Error404> | ResultFailure<500ErrorMessage, Error500>, HttpConnection> = {
+    name: "getUsers",
+    displayName: "Get Users",
+    executor: (parameter, connection) -> do {
+        var response = connection({method: 'GET', path: "/users"})
+        ---
+        if (response.status == 200)
+          success(response)
+        else if (response.status == 404) 
+          failure({message: "404 Not Found"}, Error404Instance)  
+        else
+          failure({errorCode: 500}, Error500Instance})
+    }
+}
+```
+In this case, when the Saas fails with a 4xx, the error message value will be {message: String}, but in case the error is 5xx, the error shape will be {errorCode: Number}.
+This change provides to the operation consumer the ability to, depending on the Error kind, determine the error message shape, to manipulate it.

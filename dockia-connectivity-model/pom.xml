@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <!-- Set your ORGANIZATION_ID in the groupId section to publish your DataWeave library to
+        Exchange -->
+    <!-- You can find more reference at
+    https://docs.mulesoft.com/exchange/to-publish-assets-maven#publish-an-asset-to-exchange-using-maven -->
+    <!-- <groupId>ORGANIZATION_ID</groupId> -->
+    <!-- NOTE: Remember to add your Anypoint Platform credentials in ~/.m2/settings.xml file -->
+
+    <parent>
+        <groupId>com.mulesoft.connectivity.dockia</groupId>
+        <artifactId>dockia-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>dockia-connectivity-model</artifactId>
+    <name>dockia-connectivity-model</name>
+    <packaging>dw-library</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.mulesoft.connectivity</groupId>
+            <artifactId>connectivity-language</artifactId>
+            <classifier>dw-library</classifier>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>mule-public</id>
+            <url>https://repository.mulesoft.org/nexus/content/repositories/public</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>mule-public</id>
+            <url>https://repository.mulesoft.org/nexus/content/repositories/public</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+</project>

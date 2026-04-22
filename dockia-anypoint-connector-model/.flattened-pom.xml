@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.mulesoft.connectivity.dockia</groupId>
+  <artifactId>dockia-anypoint-connector-model</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>dockia-anypoint-connector-model</name>
+  <description>dockia</description>
+  <dependencies>
+    <dependency>
+      <groupId>com.mulesoft.connectivity.dockia</groupId>
+      <artifactId>dockia-connectivity-model</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+      <classifier>dw-library</classifier>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.mulesoft.connectivity</groupId>
+      <artifactId>connectivity-mule-language</artifactId>
+      <version>1.0.0</version>
+      <classifier>dw-library</classifier>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+  <repositories>
+    <repository>
+      <id>mule-public</id>
+      <url>https://repository.mulesoft.org/nexus/content/repositories/public</url>
+    </repository>
+    <repository>
+      <id>mulesoft-releases</id>
+      <name>MuleSoft Public Releases Repository</name>
+      <url>https://repository.mulesoft.org/releases/</url>
+    </repository>
+  </repositories>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.mule.weave</groupId>
+        <artifactId>data-weave-maven-plugin</artifactId>
+        <version>2.11.0-20251202</version>
+        <extensions>true</extensions>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <id>private-exchange-deploy</id>
+      <repositories>
+        <repository>
+          <id>Repository</id>
+          <name>Corporate Repository</name>
+          <url>https://maven.anypoint.mulesoft.com/api/v3/organizations/${organization.id}/maven</url>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+</project>

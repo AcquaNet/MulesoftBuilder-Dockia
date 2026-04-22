@@ -1,0 +1,75 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+When this rule is mentioned use this documentation:
+
+# Triggers
+
+Triggers are a special kind of operation that are used to poll for changes in a SaaS. They are used to implement the 
+source part of a flow. Triggers are different from operations in that they are not invoked directly by the user, but 
+instead are invoked by the platform when it needs to check for changes in the SaaS.
+
+## Trigger extraction strategy
+
+The trigger extraction strategy is the way the trigger will be used to extract data from the SaaS. The strategy is 
+defined by the `@TriggerStrategy` annotation. The strategy can be one of the following:
+
+- `@TriggerStrategy(Watermark)`: The trigger will use a watermark to track the last time it was invoked. The watermark 
+  is a value that is stored in the platform and is used to determine what data has already been processed. The watermark 
+  is typically a timestamp, but it can be any value that can be used to determine what data has already been processed.
+
+- `@TriggerStrategy(Polling)`: The trigger will be invoked periodically to check for changes in the SaaS. The polling 
+  interval is defined by the platform.
+
+- `@TriggerStrategy(Webhook)`: The trigger will be invoked when a webhook is received from the SaaS. The webhook URL is 
+  defined by the platform.
+
+## Input mapper
+
+The input mapper is a function that is used to transform the input of the trigger into the format expected by the SaaS. 
+The input mapper is defined by the `@InputMapper` annotation. The input mapper is optional, but it is recommended to use 
+it to ensure that the input is in the correct format.
+
+## Initial watermark
+
+The initial watermark is the value that will be used as the watermark when the trigger is first invoked. The initial 
+watermark is defined by the `@InitialWatermark` annotation. The initial watermark is optional, but it is recommended to 
+use it to ensure that the trigger starts from a known point in time.
+
+## Example
+
+The following example shows how to define a trigger that uses a watermark to track the last time it was invoked:
+
+```
+@OperationElement()
+var trigger : Operation<TriggerInputType, TriggerOutputType, ResultFailure<GenericErrorResult, Error>, HttpConnection> = {
+    name: "trigger",
+    displayName: "Trigger",
+    executor: (parameter, connection) -> do {
+        var response = connection({
+            method: 'GET',
+            path: "/trigger?since=" ++ parameter.since
+        })
+        ---
+        if (response.status == 200)
+          success(response.body as TriggerOutputType)
+        else
+          failure(response.body as GenericErrorResult)
+    }
+}
+
+type TriggerInputType = {
+    since: @InitialWatermark() String
+}
+
+type TriggerOutputType = {
+    events: Array<Event>
+}
+
+type Event = {
+    id: String,
+    timestamp: String,
+    data: Object
+}

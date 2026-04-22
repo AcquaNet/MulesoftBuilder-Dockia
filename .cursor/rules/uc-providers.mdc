@@ -1,0 +1,100 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+When this rule is mentioned use this documentation:
+
+
+# Providers
+
+To dynamically enhance operation metadata, two components can be attached to points in the input or output types.
+These are [value providers](mdc:value-providers.md) and [dynamic metadata providers](mdc:dynamic-metadata.md).
+
+## Parameters
+
+The data provided by both can depend on specific parts of the input data.
+To support this, providers can require some input data to be present.
+This input data is bound to pieces of the input.
+
+Example:
+
+```dataweave
+  city: @ValuesFrom(value = { name: "citiesValueProvider", args: { iso_code: ??? } }) String
+```
+
+The specific value provider in the example above requires an input like this:
+
+```json
+{
+    "iso_code": "AR"
+}
+```
+
+The country code will be taken from the input that is being constructed for the operation. A selector is provided to pick the data that will be passed to the provider.
+
+## Selectors
+Selectors are paths into a type tree. They can be relative or absolute.
+
+This is an example of a value provider using a relative selector to define that the set of possible values in a field depends on a sibling field:
+
+```dataweave
+type Address = {
+    street: String,
+    country: String,
+    city: @ValuesFrom(value = { name: "citiesValueProvider", args: { iso_code: "country" } }) String
+}
+```
+
+A selector can be absolute.
+
+```dataweave
+type CalculateRouteType = {
+    means: String,
+    origin: Address,
+    destination: Address
+}
+
+type Address = {
+    street: String,
+    country: @ValuesFrom(value = { name: "countriesValueProvider", args: { means: "/means" } }) String,
+    city: String
+}
+```
+
+## Context variables
+
+By using absolute and relative selectors the `Address` type can be reused.
+However, absolute selectors can only be used when the operation structure is
+always the same and can be relied upon.
+For more complex cases, you can employ a _context variable_.
+
+If we want to use a context variable for the means of transportation in the example above,
+the field definition will look like this:
+
+```dataweave
+    country: @ValuesFrom(value = { name: "countriesValueProvider", args: { means: "#means" } }) String,
+```
+Where does the "means" variable come from?  The value of these context variables is searched through the stack of type definitions at the point of the reference, stopping at the first object with a “With” annotation which defines a variable with the same name. In this case, something like `@With(value = {means: "some/selector"})`.
+
+A complete example of this:
+
+```dataweave
+type Address = {
+    street: String,
+    city: String,
+    country: @ValuesFrom(value = {valueProvider: { name: "countriesValueProvider", args: { means: "#means" } }) String
+}
+
+type Options = {
+    means: String
+}
+
+type Route = @With(value = { means: "options/means" }) {
+    origin: Address,
+    destination: Address,
+    options: Options
+}
+```
+
+Here the means of transportation will be resolved to a field inside an `Options` type, for both usages of `Address`.

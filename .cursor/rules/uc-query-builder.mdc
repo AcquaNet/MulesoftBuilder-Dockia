@@ -1,0 +1,317 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+When this rule is mentioned use this documentation:
+
+# Query Builder
+
+The query builder is a feature that allows you to build queries in a declarative way. It is used to define the structure 
+of the data that will be returned by an operation. The query builder is used in conjunction with the `@QueryBuilder` 
+annotation to define the structure of the data that will be returned by an operation.
+
+## Components
+
+The query builder is composed of the following components:
+
+- **Object type**: The type of the object that will be returned by the operation. This is defined by the `@ObjectType` 
+  annotation.
+
+- **Projected fields**: The fields that will be returned by the operation. This is defined by the `@FieldSelector` 
+  annotation.
+
+- **Filters**: The filters that will be applied to the data. This is defined by the `@ResultSetFilter` annotation.
+
+- **Limit and offset**: The number of records to return and the offset from which to start returning records. This is 
+  defined by the `@Limit` and `@Offset` annotations.
+
+- **Order by**: The fields by which to order the results. This is defined by the `@OrderBy` annotation.
+
+## Example
+
+The following example shows how to define a query builder for an operation that returns a list of users:
+
+```
+@OperationElement()
+var getUsers : Operation<GetUsersInputType, GetUsersOutputType, ResultFailure<GenericErrorResult, Error>, HttpConnection> = {
+    name: "getUsers",
+    displayName: "Get Users",
+    executor: (parameter, connection) -> do {
+        var response = connection({
+            method: 'GET',
+            path: "/users"
+        })
+        ---
+        if (response.status == 200)
+          success(response.body as GetUsersOutputType)
+        else
+          failure(response.body as GenericErrorResult)
+    }
+}
+
+type GetUsersInputType = {
+    @QueryBuilder()
+    query: Query
+}
+
+type Query = {
+    @ObjectType()
+    objectType: String,
+    @FieldSelector()
+    fields: Array<String>,
+    @ResultSetFilter()
+    filters: Array<Filter>,
+    @Limit()
+    limit: Int,
+    @Offset()
+    offset: Int,
+    @OrderBy()
+    orderBy: Array<OrderBy>
+}
+
+type Filter = {
+    field: String,
+    operator: String,
+    value: String
+}
+
+type OrderBy = {
+    field: String,
+    direction: String
+}
+
+type GetUsersOutputType = {
+    users: Array<User>
+}
+
+type User = {
+    id: String,
+    name: String,
+    email: String
+}
+```
+
+Query builder is a UX created for building queries in a way that abstracts users from the query language/query APIs 
+and provides a consistent experience. A query builder defines building blocks that are used to expose the different 
+query models that are supported on each connector. These building blocks can be combined, ignored, or extended to 
+adapt to the capabilities of the target query language/API. Query builder might be used either for operations or triggers.
+
+The parts of the query builder are:
+- object type
+- projected fields
+- filters
+- limit and offset
+- order by
+
+To create an operation with query builder, the input type has to have the annotation `@QueryBuilder`, define the output type of the 
+operation depending on object type and projected fields and write functions to transform the input type to the query 
+language of the SaaS. In case of a trigger, the input type is defined in the operation it relies and the
+`@QueryBuilder` annotation must not be present. It's only for operations. 
+
+```
+@OperationElement()
+var queryBuilder : Operation<QueryBuilderInputType, QueryResult<DynamicOutputType>, ResultFailure<GenericErrorResult, Error>, HttpConnection> = {
+    name: "queryBuilder",
+    displayName: "Query",
+    executor: (parameter, connection) -> do {
+        var response = connection({
+            method: 'GET',
+            path: "/query?q=" ++ queryToSoql(parameter)
+        })
+        ---
+        if (response.status == 200)
+          success(response.body as QueryResult<DynamicOutputType>)
+        else
+          failure(response.body as GenericErrorResult)
+    }
+}
+```
+## Object Type
+
+Defines the type of object that will be queried and will contain the name of the type to be queried. The value of the 
+selected object type will be used to determine the output type for the query builder operation/trigger. To provide the required 
+query builder UX, a value provider must be attached to this field so the user can get the list of available types.
+
+```
+type QueryBuilderInputType = @QueryBuilder() {
+    objectType: @ValuesFrom(value = { name: "valueProviderName" }) String
+}
+```
+Reminder: For trigger types, the @QueryBuilder() annotation must not be present. 
+
+## Projected fields
+
+The capability of selecting which fields must be included in the result set varies depending on the connected application. 
+In some cases, no filtering is possible and all fields will always be returned. In other cases, both all fields (ie: select *) 
+or a custom selection of fields will be possible. The projected fields property will be used, along with the value of the 
+selected object type, to determine the output type for the query builder operation/trigger.
+
+The functionality for selecting all/custom field selection can be modeled using a union type with a discriminator field.
+To provide the requested UX for custom field selection, the UI needs to have access to the fields and their types for
+the selected object. 
+
+The retrieval of this data is done by using a Value Provider that depends on the selected object type. 
+A FieldSelector and Discriminator annotations will be needed to mark the query model property where this must be applied.
+
+```
+type QueryBuilderInputType = @QueryBuilder() {
+    projectedFields: @FieldSelector()
+                     @Discriminator(value = {key: "kind"})
+                        (AllFieldsSelection | CustomFieldsSelection<@ValuesFrom(value = { name: "queryBuilderFieldsValueProvider", arguments: {objectType: "/objectType"}}) String>)
+}
+```
+Reminder: For trigger types, the @QueryBuilder() annotation must not be present.
+
+## Filters
+
+A condition indicates the name of the field where the condition applies, an operator to apply to the field's value, and 
+optionally another value to use in conjunction with the field's value and operator. This value is optional as there are 
+unary operators (ex: isNull) that apply to the field's value only.
+
+When defining a filter on a query, there are different variations to consider: No condition, conditions using ANDs, 
+conditions using ORs, custom condition. Whether each alternative is available on a given query builder will depend 
+on the target SaaS. These different scenarios can be modeled using a union type with a discriminator to indicate the type of 
+condition. A ResultSetFilter annotation will be needed to mark the query model property where this must be applied.
+
+To provide the requested UX for condition definition, the UI needs to have access to the fields and their types for the 
+selected object and the list of supported operators. The retrieval of this data is done by using a Value Providers 
+that depends on the selected object type.
+
+```
+type QueryBuilderInputType = @QueryBuilder() {
+    filter: @ResultSetFilter()
+            @Discriminator(value = {key: "kind"})
+                QueryFilter<@ValuesFrom(value = { name: "queryBuilderFieldsValueProvider", arguments: {objectType: "/objectType"}}) String, @ValuesFrom(value = { name: "queryBuilderOperatorsValueProvider" }) String>
+}
+```
+Reminder: For trigger types, the @QueryBuilder() annotation must not be present.
+### IMPORTANT
+In a trigger use case, the watermark used is usually a field of the output object, such as a date. 
+Watermarking involves complex logic that must be handled by the connector developer. So, when the filter
+attribute is defined, results must not include the field used as the watermark. If not, an end user can
+use that field as a filter breaking the watermarking logic ending up with wrong events. A connector developer
+must handle this problem adding a filter in the value provider defined for the filter's 
+query builder attribute to exclude the field used as the watermark.
+
+```
+var queryBuilderFieldsValueProviderForTrigger = queryBuilderFieldsValueProvider
+    mapSuccessResult (result) -> result filter ($.value != 'since')
+
+type QueryBuilderInputTypeTrigger = {
+    filter: @ResultSetFilter()
+            @Discriminator(value = {key: "kind", defaultSelection: "NONE"})
+                QueryFilter<
+                    @ValuesFrom(value = { name: "queryBuilderFieldsValueProviderForTrigger",
+                        arguments: {objectType: "/objectType" }}) String,
+                    @ValuesFrom(value = { name: "queryBuilderOperatorsValueProvider"}) String>
+}
+```
+See how the `since` field from the selected object is not eligible in the filters fields for an end user.
+This field is going to be used in the watermarking logic when the final query is built.
+
+## Limit and Offset
+
+Some SaaS supports defining Limit and Offset in a query. There are no extra annotations needed to support this.
+```
+type QueryBuilderInputType = @QueryBuilder() {
+    limit: Number,
+    offset: Number
+}
+```
+## Order by
+
+Query builders can support the capability of sorting the result set by defining an ascending or descending order to be 
+applied to a given field. 
+
+To provide the requested UX for defining the resultset ordering, the UI needs to have access 
+to the fields of the selected object. The retrieval of this data is done by using a Value Provider that 
+depends on the selected object type.
+
+A FieldOrder annotation will be needed to mark the field used for defining query ordering.
+
+```
+type QueryBuilderInputType = @QueryBuilder() {
+   orderBy: orderBy: @FieldOrder() Array<QueryFieldOrder<@ValuesFrom(value = { name: "orderFieldsValueProvider", arguments: {objectType: "/objectType"}}) String>>
+}
+```
+## Dynamic output
+
+The output type of the operation/trigger will depend on object type and the projected fields.
+
+```
+type DynamicOutputType = @MetadataProvider(value = {name: "metadataProviderForProjection", arguments: {objectType: "/objectType", fields: "/projectedFields"}}) Object
+```
+
+## Query language
+
+The connector will have to write functions to convert the input type in the query language supported by the SaaS.
+For example:
+```
+fun getFieldSelection(fieldsSelection: AllFieldsSelection): String = "fields(ALL)"
+fun getFieldSelection<F <: String>(fieldsSelection: CustomFieldsSelection<F>): String = fieldsSelection.fields joinBy ", "
+
+fun getValueStr(val: String) : String = "'"++ val ++ "'"
+fun getValueStr(val: Number) : String = val as String
+fun getValueStr(val: Null) : String = "null"
+fun getValueStr(val: Array<String>) : String = "(" ++ (val map ((item) -> "'" ++ item ++ "'") joinBy ", ")  ++ ")"
+
+fun getOperator(val: String) : String = val match {
+  case "equals" -> "="
+  case "isNotEqual" -> "!="
+  case "lessThan" -> "<"
+  case "lessThanOrEquals" -> "<="
+  case "greaterThan" -> ">"
+  case "greaterThanOrEquals" -> ">="
+  case "isNull" -> ""
+  case "in" -> "in"
+  case "between" -> "between"
+}
+
+fun getCondition<F <: String, O <: String>(condition: QueryCondition<F, O>): String = do {
+    var left = condition.field ++ " " ++ getOperator(condition.operator)
+    var right = if (condition.operator == 'between')
+                       " " ++ (condition.values as Array)[0] as String ++ " and " ++ (condition.values as Array)[1] as String
+                     else if (condition.operator == 'isNull')
+                        if (condition.value)
+                            "= null"
+                        else
+                            "!= null"
+                     else
+                       if (condition.value?)
+                         " " ++ (getValueStr(condition.value))
+                       else
+                         ""
+    ---
+    left ++ right
+}
+
+fun getFilter(filter: NoQueryFilter): String =  ""
+fun getFilter<F <: String, O <: String>(filter: AndQueryFilter<F, O>): String =  if (isEmpty(filter.conditions)) "" else " WHERE " ++ (filter.conditions map getCondition($) joinBy " AND ")
+fun getFilter<F <: String, O <: String>(filter: OrQueryFilter<F, O>): String =  if (isEmpty(filter.conditions)) "" else " WHERE " ++ (filter.conditions map getCondition($) joinBy " OR ")
+fun getFilter<F <: String, O <: String>(filter: CustomQueryFilter<F, O>): String = if (isEmpty(filter.conditions)) "" else " WHERE " ++ filter.expression replace /[0-9]+/ with getCondition(filter.conditions[$[0]-1]!)
+fun getFilter<F <: String, O <: String>(watermarkField: String,
+                                        watermarkValue: String,
+                                        filter: AndQueryFilter<F, O> | OrQueryFilter<F, O> | CustomQueryFilter<F, O> | NoQueryFilter) : String =
+    do {
+        var watermarkCondition = watermarkField ++ ">=" ++ watermarkValue
+        ---
+        if (isEmpty(filter.conditions))
+            " WHERE " ++ watermarkCondition
+        else
+            " WHERE " ++ "(" ++ replaceAll(getFilter(filter)," WHERE ", "") ++ ")" ++ " AND " ++ watermarkCondition
+    }
+
+fun getOffset(offset: Number): String = " OFFSET " ++ offset as String
+fun getOffset(offset: Null): String = ""
+
+fun queryToSoql(query: QueryBuilderInputType): String = log("Query: ", "SELECT $(getFieldSelection(query.projectedFields)) FROM $(query.objectType)$(getFilter(query.filter))$(getOffset(query.offset))")
+fun queryToSoqlTrigger(query: QueryBuilderInputTypeTrigger, watermarkField: String, watermarkValue: String): String = log("Query: ", "SELECT $(getFieldSelection(query.projectedFields)) FROM $(query.objectType)$(getFilter(watermarkField,watermarkValue,query.filter))$(getOffset(query.offset))")
+```
+### IMPORTANT
+In a trigger use case (in this example), final query is built calling the `queryToSoqlTrigger` and the
+watermark value and field name is needed to build the `WHERE` condition. The watermark filter must be 
+always present in the `WHERE` condition as part of the filtering and must be handled by the connector developer
+avoiding to expose it to an end user. Connectors that supports query builder with triggers, must support
+the `AND` condition as part of the `WHERE`. If not, a connector developer can not add the watermark filter
+apart from any other filter an end user can add. And this is not allowed. Watermark filter is always needed.w

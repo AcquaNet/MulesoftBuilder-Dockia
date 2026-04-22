@@ -1,0 +1,75 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+When this rule is mentioned use this documentation:
+
+# Value Providers
+
+By attaching "value providers" to types, you can enable the platform to retrieve possible values for the fields in which those types are used.
+
+As an example:
+
+We have a connector with this function which retrieves the population for a given country:
+
+```dataweave
+var getPopulation : Operation<{country: CountryIsoCode}> = {
+    // ...
+}
+```
+Suppose the "country" parameter expects to receive an _ISO code_ (e.g., AR, US, BR).
+It wouldn't be nice to ask the user to remember which ISO code belongs to each country.
+We can define a value provider to do that.
+
+We need to create a value provider:
+```dataweave
+var getCountries = // ...
+
+var countriesValueProvider = defineValueProvider(
+    getCountries.executor,
+    (response: HttpResponse<{items: Array<Country>}>) ->
+        response.body.items map ((item, index) -> {value: item.isoCode, displayValue: { label: item.name}})
+)
+```
+This value provider will call `getCountries` operation (through its executor) to retrieve a list of countries.
+This list cannot be used as is, we need to extract the data we need for the value provider.
+That what's the second parameter to defineValueProvider does, it provides a
+transformation function that goes from the executor output to a list of objects.
+Each of these objects must have the following structure:
+
+```dataweave
+{
+    value: VALUE // the actual value that will be sent as input
+    displayValue: {
+        value: LABEL // a label to show to the user, corresponding to the value above
+    }
+}
+```
+
+We now need to include the newly created value provider in the connector declaration, like this:
+```dataweave
+@FlowConnectorElement()
+var connector = {
+    name: "WorldInfo",
+    // ...
+    operations: {
+       getPopulation: getPopulation,
+       getCountries: getCountries
+    },
+    valueProviders: {
+        countriesValueProvider: countriesValueProvider,
+    }
+}
+```
+
+Now, we have a value provider which can be referenced from different operations that receive a country as input.
+
+This operation for getting the population for a country defines a value provider for its parameter:
+```dataweave
+var getPopulation : Operation<{country: @ValuesFrom(value = { name: countriesValueProvider }) CountryIsoCode}> = {
+    // ...
+}
+```
+
+More details about referencing a value provider can be found in the [providers documentation](./uc-providers.mdc).

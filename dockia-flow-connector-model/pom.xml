@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.mulesoft.connectivity.dockia</groupId>
+        <artifactId>dockia-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>dockia-flow-connector-model</artifactId>
+    <description>dockia</description>
+    <name>dockia-flow-connector-model</name>
+    <packaging>dw-library</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.mulesoft.connectivity.dockia</groupId>
+            <artifactId>dockia-connectivity-model</artifactId>
+            <version>${project.version}</version>
+            <classifier>dw-library</classifier>
+        </dependency>
+        <dependency>
+            <groupId>com.mulesoft.connectivity</groupId>
+            <artifactId>connectivity-flow-language</artifactId>
+            <classifier>dw-library</classifier>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.mulesoft.connectivity</groupId>
+                <artifactId>connectivity-flow-maven-plugin</artifactId>
+                <configuration>
+                    <releaseStatus>BETA</releaseStatus>  <!-- TODO: set to GA when releasing to prod -->
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.mulesoft.connectivity</groupId>
+                        <artifactId>connectivity-flow-tooling-support</artifactId>
+                        <version>${linkweave.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <minimizeJar>true</minimizeJar>
+                            <artifactSet>
+                                <includes>
+                                    <include>com.mulesoft.connectivity.*:*flow-connector-model</include>
+                                    <include>com.mulesoft.connectivity.*:*connectivity-model</include>
+                                </includes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>com.mulesoft.connectivity.*:*flow-connector-model</artifact>
+                                    <includes>
+                                        <include>**/*</include>
+                                    </includes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.mulesoft.connectivity.*:*connectivity-model</artifact>
+                                    <includes>
+                                        <include>**/*.dwl</include>
+                                        <include>**/*.ic</include>
+                                        <include>**/*.svg</include>
+                                    </includes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>mule-public</id>
+            <url>https://repository.mulesoft.org/nexus/content/repositories/public</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>mule-public</id>
+            <url>https://repository.mulesoft.org/nexus/content/repositories/public</url>
+        </pluginRepository>
+    </pluginRepositories>
+</project>

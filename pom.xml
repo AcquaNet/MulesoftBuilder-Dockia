@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.mulesoft.connectivity.dockia</groupId>
+    <artifactId>dockia-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>dockia-connector</name>
+    <packaging>pom</packaging>
+
+    <parent>
+        <!--  Parent pom documentation https://github.com/mulesoft/interpreted-connectivity-connector-parent-pom/tree/master/interpreted-connectivity-parent -->
+        <groupId>com.mulesoft.connectivity</groupId>
+        <artifactId>interpreted-connectivity-parent</artifactId>
+        <version>1.5.1</version>
+    </parent>
+
+    <properties>
+        <!--TODO (nicomz) this should be the same that tooling uses to create a connector -->
+        <connector.name>dockia</connector.name>
+        <!-- This property can disable the validateConnectorModel from connectivity-flow-maven-plugin -->
+        <skipFlowModelValidation>false</skipFlowModelValidation>
+    </properties>
+
+    <modules>
+            <module>dockia-connectivity-model</module>
+            <module>dockia-flow-connector-model</module>
+            <module>dockia-anypoint-connector-model</module>
+    </modules>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.mulesoft.connectors.maven</groupId>
+                <artifactId>connector-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.mule.weave</groupId>
+                <artifactId>data-weave-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

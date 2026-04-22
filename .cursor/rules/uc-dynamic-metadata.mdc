@@ -1,0 +1,124 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+When this rule is mentioned use this documentation:
+
+# Dynamic Metadata
+
+Attaching "metadata providers" to input/output Operations types, enable the platform to discover the type in runtime for fields that are partial or totally unknown in compile time.
+
+As an example:
+
+We have a connector with this operation which creates a "record" in a SaaS:
+
+```dataweave
+type InputParameters = {
+    recordType: String,
+    record: Object
+}
+var createRecord : Operation<InputParameters, Object, {error: String}, HttpConnection> = {
+    // ...
+}
+```
+
+This function is re-usable to create all kinds of entities,
+but when the user wants to know the input to be completed it will be an Object with an unknown shape.
+
+Some SaaS provide the description of an entity,
+retrieving the schema describing the fields based on the customer Connection.
+How can we provide this information to user? 
+
+We need to create a metadata provider:
+```dataweave
+// based on a recordType name and the connection will obtain the record schema
+var recordSchemaProvider: MetadataProviderExecutor<{recordType: String}, {error: String}, HttpConnection> = ... 
+```
+This metadata provider will retrieve a TypeValueDefinition that represents the Schema of the record type name provided as parameter. 
+In case the provider fails will return an error with {error: String} shape. 
+
+
+```dataweave
+// example schema for recordType = "Account"
+{
+    name: "Account",
+    "type": "Object",
+    fields: [
+        {
+            name: {
+                localName: "accountId",
+                namespace: null
+            },
+            attributes: [],
+            required: true,
+            repeated: false,
+            value: {
+                "type" : "Number"
+            },
+            label: "ID",
+            description: "Account Identifier"
+        }
+    ]
+}
+```
+
+Currently, TypeValueDefinition allows describing Object, Array, Union, String, Number, Boolean and Null types.
+
+Date and DateTime are described extending String with a format
+```dataweave 
+type StringFormat = "date" | "date-time"
+
+type StringTypeValueDefinition = {|
+  "type": "String",
+  format?: StringFormat,
+  values?: Array<EnumValue<String>>
+|}
+```
+Number Types are described extending Number with a format
+```dataweave
+type NumberFormat = "integer" | "float" | "double" | "int32" | "int64"
+
+type NumberTypeValueDefinition = {|
+  "type": "Number",
+  values?: Array<EnumValue<Number>>,
+  format?: NumberFormat
+|}
+```
+Additionally, enums are described setting field values for NumberTypeValueDefinition and StringTypeValueDefinition.
+```dataweave
+type EnumValue<T> = { value: T, label: String } 
+```
+     
+We now need to include the newly created metadata provider in the connector declaration, like this:
+```dataweave
+@FlowConnectorElement()
+var connector = {
+    name: "WorldInfo",
+    // ...
+    operations: {
+        ...
+    },
+    metadataProviders: {
+        recordSchemaProvider: recordSchemaProvider,
+    }
+}
+```
+
+Now, we have a metadata provider which can be referenced from different operations.
+
+We need to re-write our original operation to use the declared metadata provider:
+```dataweave
+type InputParameters = {
+    recordType: String,
+    record: @MetadataProvider(value = { name: "recordSchemaProvider", arguments: { recordType: "recordType" } }) Object
+}
+var createRecord : Operation<InputParameters,
+                            @MetadataProvider(value = { name: "recordSchemaProvider", arguments: { recordType: "recordType" } }) Object,
+                            {error: String},
+                            HttpConnection> = {
+    // ...
+}
+```
+
+More details about referencing a metadata provider can be found in the [providers documentation](providers.md).
