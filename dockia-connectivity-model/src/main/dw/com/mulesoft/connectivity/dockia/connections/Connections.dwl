@@ -8,24 +8,29 @@ import mapInputOperation from com::mulesoft::connectivity::decorator::Operation
 
 import O_api_v1_auth_me_get from com::mulesoft::connectivity::dockia::operations::O_api_v1_auth_me_get
 
-import defineOAuth2Connection from com::mulesoft::connectivity::transport::Http
+import doRequest, HttpRequester from com::mulesoft::connectivity::transport::Http
 
 import SemanticTerms, Label from com::mulesoft::connectivity::decorator::Annotations
 
 /**
- * Flat connection config for Dockia OAuth2 Resource Owner Password Credentials (ROPC) flow.
- * Declared as a concrete ObjectType (intersection types are not supported by the flow plugin).
- * Includes accessToken (internally used by the Mule runtime to store the obtained token)
- * plus the ROPC-specific fields required by the Dockia token endpoint.
+ * Connection config for Dockia ROPC (Resource Owner Password Credentials) flow.
  *
- * Token endpoint: POST /api/v1/oauth2/token
- * Form params: grant_type=password, client_id, client_secret, username, password
+ * Three user-facing fields:
+ *   - baseUri:   Base URL of the Dockia API (e.g. https://dockia-api.dock-ia.com)
+ *   - username:  Dockia user email — determines the user's role and permissions
+ *   - password:  Dockia user password
+ *
+ * client_id ("atina-backend") and client_secret are fixed Keycloak application
+ * credentials for this Dockia deployment and are hardcoded in the connect function.
+ *
+ * authenticationType "basic" causes the Mule runtime to use BasicConnectivityConnectionProvider,
+ * which passes exactly {baseUri, username, password} to the DataWeave connect function.
+ * The connect function performs the ROPC token exchange transparently on every API call.
  */
 type DockiaConnectionConfig = {
-  accessToken: @SemanticTerms(value = ["password"])  String,
-  baseUri:     @Label(value = "Base URI")            String,
-  username:    @SemanticTerms(value = ["username"])  @Label(value = "Username") String,
-  password:    @SemanticTerms(value = ["password"])  @Label(value = "Password") String
+  baseUri:  @Label(value = "Base URI") String,
+  username: @SemanticTerms(value = ["username"]) @Label(value = "Username") String,
+  password: @SemanticTerms(value = ["password"]) @Label(value = "Password") String
 }
 
 @TestConnectionElement()
@@ -42,14 +47,14 @@ var test = {
     ---
     {
       isValid: response.value.status == 200,
-      message: 
+      message:
         if (response.success is true)
           "Connection test succeeded"
         else if (response.error.value.status?)
           "Connection test failed - Http status code: " ++ response.error.value.status as String
         else
           "Connection test failed",
-      (error: 
+      (error:
         if (isEmpty(response.error.value.body.^raw))
           write(response.error.value.body, "application/dw") as String
         else
@@ -59,29 +64,57 @@ var test = {
 }
 
 /**
- * OAuth2 connection using the native Resource Owner Password Credentials (ROPC) flow.
- * Used by the FLOW connector (dockia-flow-connector-model) which runs in the Mule runtime.
- * The connectivity-flow-maven-plugin does NOT validate grant types through
- * connectivity-mule-persistence, so "password" is accepted here without errors.
+ * ROPC (Resource Owner Password Credentials) connection for Dockia.
  *
- * The PasswordGrantType attributes only carry tokenUrl/grantType; the framework
- * does not automatically forward username and password to the token endpoint.
- * The inDance body extensions inject them explicitly so the Mule runtime sends:
- *   POST /api/v1/oauth2/token
- *   Content-Type: application/x-www-form-urlencoded
- *   Body: grant_type=password&client_id=...&client_secret=...&username=...&password=...
+ * How it works:
+ *   1. The Mule runtime uses BasicConnectivityConnectionProvider (authenticationType: "basic"),
+ *      which passes {baseUri, username, password} to this DataWeave connect function.
+ *   2. For every API operation the connect function calls the Dockia token endpoint:
+ *        POST /api/v1/oauth2/token
+ *        Content-Type: application/x-www-form-urlencoded
+ *        grant_type=password & client_id=atina-backend & client_secret=... & username=... & password=...
+ *   3. The obtained access_token is injected as "Authorization: Bearer <token>" into the request.
+ *
+ * Each Mule user/session can configure different username/password credentials, so each user
+ * gets their own token with the correct role-based permissions from Keycloak.
+ *
+ * Token-per-call overhead is acceptable for connector use cases where connection pools are small.
+ * If needed, token caching can be added at the Mule flow level using an Object Store.
  */
 @ConnectionElement()
-var oauth2 = defineOAuth2Connection<DockiaConnectionConfig>((schema) -> {
-  accessToken: schema.accessToken
-}, (schema) -> {
-  baseUri: schema.baseUri
-}, {
-  grantType: "password",
-  tokenUrl: "/api/v1/oauth2/token",
-  scopes: []
-},
-(schema) -> [
-  { inDance: true, in: "body", name: "username", value: schema.username },
-  { inDance: true, in: "body", name: "password", value: schema.password }
-])
+var oauth2 = {
+  connect: (schema: DockiaConnectionConfig) ->
+    (httpRequest: HttpRequester) -> do {
+      var logAcquire = log("[Dockia] Acquiring ROPC token", {username: schema.username, path: httpRequest.path})
+      var tokenResp = doRequest({
+        method: "POST",
+        baseUri: schema.baseUri,
+        path: "/api/v1/oauth2/token",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: {
+          grant_type: "password",
+          client_id: "atina-backend",
+          client_secret: "backend-secret-change-me",
+          username: schema.username,
+          password: schema.password
+        },
+        config: {contentType: "application/x-www-form-urlencoded"}
+      })
+      var logExecuteResponse = log("[Dockia] Response from token endpoint", {
+        path: httpRequest.path,
+        tokenStatus: tokenResp.body
+      })
+      var accessToken = tokenResp.body.access_token as String
+      var logExecute = log("[Dockia] Token acquired, executing API request", {
+        path: httpRequest.path,
+        tokenStatus: tokenResp.status
+      })
+      ---
+      doRequest(
+        httpRequest
+          update { case .baseUri! -> schema.baseUri }
+          update { case .headers.Authorization! -> "Bearer $(accessToken)" }
+      )
+    },
+  authenticationType: {"type": "basic"}
+}
