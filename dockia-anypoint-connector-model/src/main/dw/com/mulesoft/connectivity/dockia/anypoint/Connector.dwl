@@ -8,7 +8,7 @@ import anypoint_O_api_v1_extraction_tasks__taskId__get from com::mulesoft::conne
 
 import anypoint_O_api_v1_oauth2__well_known_oauth_authorization_server_get from com::mulesoft::connectivity::dockia::anypoint::operations::O_api_v1_oauth2__well_known_oauth_authorization_server_get
 
-import bearer_jwt, oauth2, test from com::mulesoft::connectivity::dockia::connections::Connections
+import oauth2, test from com::mulesoft::connectivity::dockia::connections::Connections
 
 import MuleConnectorElement from com::mulesoft::connectivity::mule::Metadata
 
@@ -31,7 +31,6 @@ var connector = {
   vendor: "auto-generated",
   category: "SELECT",
   connections: {
-    bearer_jwt: bearer_jwt,
     oauth2: oauth2
   },
   testConnection: test,

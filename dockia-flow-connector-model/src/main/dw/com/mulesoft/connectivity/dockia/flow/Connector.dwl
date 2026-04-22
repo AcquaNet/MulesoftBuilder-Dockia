@@ -1,6 +1,6 @@
 %dw 2.8
 
-import bearer_jwt, oauth2, test from com::mulesoft::connectivity::dockia::connections::Connections
+import oauth2, test from com::mulesoft::connectivity::dockia::connections::Connections
 
 import flow_O_api_v1_auth_me_get from com::mulesoft::connectivity::dockia::flow::operations::O_api_v1_auth_me_get
 
@@ -30,7 +30,6 @@ var connector = {
   ],
   vendor: "auto-generated",
   connections: {
-    bearer_jwt: bearer_jwt,
     oauth2: oauth2
   },
   testConnection: test,

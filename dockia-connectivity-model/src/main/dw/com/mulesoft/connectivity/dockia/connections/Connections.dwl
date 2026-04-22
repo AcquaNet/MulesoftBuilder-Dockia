@@ -8,7 +8,7 @@ import mapInputOperation from com::mulesoft::connectivity::decorator::Operation
 
 import O_api_v1_oauth2__well_known_oauth_authorization_server_get from com::mulesoft::connectivity::dockia::operations::O_api_v1_oauth2__well_known_oauth_authorization_server_get
 
-import BearerAuthSchema, OAuth2AuthSchema, defineBearerHttpConnectionProvider, defineOAuth2Connection from com::mulesoft::connectivity::transport::Http
+import OAuth2AuthSchema, defineOAuth2Connection from com::mulesoft::connectivity::transport::Http
 
 @TestConnectionElement()
 var test = {
@@ -32,13 +32,6 @@ var test = {
         response.error.value.body.^raw as String) if (response.success is false and response.error.value.body?)
   })
 }
-
-@ConnectionElement()
-var bearer_jwt = defineBearerHttpConnectionProvider<BearerAuthSchema & { baseUri: String }>((schema) -> {
-  token: schema.token
-}, (schema) -> {
-  baseUri: schema.baseUri
-})
 
 @ConnectionElement()
 var oauth2 = defineOAuth2Connection<OAuth2AuthSchema & { baseUri: String }>((schema) -> {
