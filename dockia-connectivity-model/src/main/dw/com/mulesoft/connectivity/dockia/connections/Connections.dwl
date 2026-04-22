@@ -46,7 +46,7 @@ var oauth2 = defineOAuth2Connection<OAuth2AuthSchema & { baseUri: String }>((sch
 }, (schema) -> {
   baseUri: schema.baseUri
 }, {
-  grantType: "password",
+  grantType: "clientCredentials",
   tokenUrl: "/api/v1/oauth2/token",
   scopes: []
 })
