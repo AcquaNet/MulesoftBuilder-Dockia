@@ -8,7 +8,7 @@ import mapInputOperation from com::mulesoft::connectivity::decorator::Operation
 
 import O_api_v1_oauth2__well_known_oauth_authorization_server_get from com::mulesoft::connectivity::dockia::operations::O_api_v1_oauth2__well_known_oauth_authorization_server_get
 
-import OAuth2AuthSchema, defineOAuth2Connection from com::mulesoft::connectivity::transport::Http
+import defineOAuth2Connection from com::mulesoft::connectivity::transport::Http
 
 import SemanticTerms, Label from com::mulesoft::connectivity::decorator::Annotations
 
