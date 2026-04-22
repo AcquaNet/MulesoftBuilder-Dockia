@@ -1,39 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 180" role="img" aria-labelledby="title desc">
-  <title>Dock-IA minimal icon for MuleSoft connector</title>
-  <desc>Minimal blue rounded square symbol with connected modules and Dock-IA wordmark.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" role="img" aria-labelledby="title desc">
+  <title>DOCKIA badge</title>
+  <desc>SVG badge matching the provided JDE circular icon style, with the text DOCKIA.</desc>
   <defs>
     <style>
-      .blue { fill: #2563EB; }
-      .dark { fill: #111827; }
-      .strokeBlue { stroke: #2563EB; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+      .blue-fill { fill: #1779BF; }
+      .blue-stroke { stroke: #0D5D94; stroke-width: 3; }
+      .label { fill: #FFFFFF; font-family: Arial, Helvetica, sans-serif; font-size: 26px; font-weight: 400; text-anchor: middle; dominant-baseline: middle; }
     </style>
   </defs>
 
-  <!-- icon -->
-  <g transform="translate(20,20)">
-    <!-- main outer shape -->
-    <rect x="0" y="0" width="92" height="92" rx="18" class="blue"/>
-
-    <!-- inner negative modules -->
-    <rect x="10" y="10" width="31" height="31" rx="6" fill="white"/>
-    <rect x="51" y="10" width="31" height="31" rx="6" fill="white"/>
-    <rect x="10" y="51" width="31" height="31" rx="6" fill="white"/>
-
-    <!-- connector join -->
-    <path d="M41 25 H51 M25 41 V51 M41 66 H51" class="strokeBlue"/>
-    <path d="M51 66 H64 C74 66 82 74 82 84" class="strokeBlue" opacity="0"/>
-    <!-- subtle accent to suggest integration -->
-    <circle cx="66.5" cy="66.5" r="6.5" fill="white"/>
-  </g>
-
-  <!-- wordmark -->
-  <g transform="translate(145,37)">
-    <path class="dark" d="M24.3 87C10.8 87 0 76.4 0 63V29C0 15.6 10.8 5 24.3 5h26.2c26.7 0 45.5 16.5 45.5 41 0 24.3-18.8 41-45.5 41H24.3zm1.2-17h24.1c15.8 0 27-9.4 27-24S65.4 22 49.6 22H25.5c-4.6 0-7.6 3-7.6 7.3v33.4c0 4.4 3 7.3 7.6 7.3z"/>
-    <path class="dark" d="M138.4 88.7c-21.5 0-37.4-14.2-37.4-34.5s15.9-34.4 37.4-34.4c21.4 0 37.2 14.1 37.2 34.4s-15.8 34.5-37.2 34.5zm0-15.3c10.9 0 19.1-7.7 19.1-19.2 0-11.3-8.2-19.1-19.1-19.1-11 0-19.3 7.8-19.3 19.1 0 11.5 8.3 19.2 19.3 19.2z"/>
-    <path class="dark" d="M187.7 87V0h17.3v87z"/>
-    <path class="dark" d="M220.1 87V0h17.3v49.5l23.8-27.9h21l-25.5 29L284.8 87H264l-18.8-24.4-7.8 8.1V87z"/>
-    <path class="dark" d="M290.1 58.5V43.4h35.8v15.1z"/>
-    <path class="dark" d="M342.1 87V21.5h17.3V87zm8.7-74.1c-6.3 0-10.8-4.2-10.8-9.8s4.5-9.7 10.8-9.7c6.2 0 10.7 4.1 10.7 9.7s-4.5 9.8-10.7 9.8z"/>
-    <path class="dark" d="M373.1 87l28.6-65.5h17.8L448 87h-18.3l-5.7-14.3h-27L391.2 87zm29.6-29.1h15.6l-7.7-19.4z"/>
-  </g>
+  <circle cx="75" cy="75" r="71" class="blue-fill blue-stroke"/>
+  <text x="75" y="77" class="label">DOCKIA</text>
 </svg>
