@@ -4,14 +4,14 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.mulesoft.connectivity.dockia</groupId>
   <artifactId>dockia-anypoint-connector-model</artifactId>
-  <version>0.0.5-SNAPSHOT</version>
+  <version>0.0.6-SNAPSHOT</version>
   <name>dockia-anypoint-connector-model</name>
   <description>dockia</description>
   <dependencies>
     <dependency>
       <groupId>com.mulesoft.connectivity.dockia</groupId>
       <artifactId>dockia-connectivity-model</artifactId>
-      <version>0.0.5-SNAPSHOT</version>
+      <version>0.0.6-SNAPSHOT</version>
       <classifier>dw-library</classifier>
       <scope>compile</scope>
     </dependency>
