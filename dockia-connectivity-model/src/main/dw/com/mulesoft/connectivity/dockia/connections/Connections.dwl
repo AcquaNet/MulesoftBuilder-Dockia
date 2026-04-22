@@ -59,12 +59,17 @@ var test = {
 }
 
 /**
- * OAuth2 connection using clientCredentials as the declared grant type (required by
- * connectivity-mule-maven-plugin:1.0.0 which rejects "password" at build time).
+ * OAuth2 connection using the native Resource Owner Password Credentials (ROPC) flow.
+ * Used by the FLOW connector (dockia-flow-connector-model) which runs in the Mule runtime.
+ * The connectivity-flow-maven-plugin does NOT validate grant types through
+ * connectivity-mule-persistence, so "password" is accepted here without errors.
  *
- * The inDance extensions override the token request at runtime to send the actual
- * ROPC parameters (grant_type=password, client_id, client_secret, username, password)
- * as form-encoded body fields in the call to the Dockia token endpoint.
+ * The PasswordGrantType attributes only carry tokenUrl/grantType; the framework
+ * does not automatically forward username and password to the token endpoint.
+ * The inDance body extensions inject them explicitly so the Mule runtime sends:
+ *   POST /api/v1/oauth2/token
+ *   Content-Type: application/x-www-form-urlencoded
+ *   Body: grant_type=password&client_id=...&client_secret=...&username=...&password=...
  */
 @ConnectionElement()
 var oauth2 = defineOAuth2Connection<DockiaConnectionConfig>((schema) -> {
@@ -72,12 +77,11 @@ var oauth2 = defineOAuth2Connection<DockiaConnectionConfig>((schema) -> {
 }, (schema) -> {
   baseUri: schema.baseUri
 }, {
-  grantType: "clientCredentials",
+  grantType: "password",
   tokenUrl: "/api/v1/oauth2/token",
   scopes: []
 },
 (schema) -> [
-  { inDance: true, in: "body", name: "grant_type", value: "password"        },
-  { inDance: true, in: "body", name: "username",   value: schema.username   },
-  { inDance: true, in: "body", name: "password",   value: schema.password   }
+  { inDance: true, in: "body", name: "username", value: schema.username },
+  { inDance: true, in: "body", name: "password", value: schema.password }
 ])

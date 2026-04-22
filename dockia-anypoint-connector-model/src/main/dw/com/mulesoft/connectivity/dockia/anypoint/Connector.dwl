@@ -8,7 +8,9 @@ import anypoint_O_api_v1_extraction_tasks__taskId__get from com::mulesoft::conne
 
 import anypoint_O_api_v1_oauth2__well_known_oauth_authorization_server_get from com::mulesoft::connectivity::dockia::anypoint::operations::O_api_v1_oauth2__well_known_oauth_authorization_server_get
 
-import oauth2, test from com::mulesoft::connectivity::dockia::connections::Connections
+import oauth2 from com::mulesoft::connectivity::dockia::anypoint::AnypointConnections
+
+import test from com::mulesoft::connectivity::dockia::connections::Connections
 
 import MuleConnectorElement from com::mulesoft::connectivity::mule::Metadata
 
