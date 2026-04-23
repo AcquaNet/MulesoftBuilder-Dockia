@@ -26,6 +26,12 @@ var O_api_v1_extract_upload_post = {
       var query = parameter.query default {} withSerializationConfig {}
       var headers = serializeHeaders(parameter.headers default {}, {})
       var cookie = serializeCookies(parameter.cookie default {}, {})
+      var debugBody = log("[Dockia] processDocument - body received", {
+        hasBody:    parameter.body?,
+        hasFile:    (parameter.body.file?) default false,
+        bodyIsObj:  (parameter.body is Object) default false,
+        querySource: parameter.query.source default "N/A"
+      })
       var response = connection({
         method: "POST",
         path: "/api/v1/extract/upload",
@@ -35,7 +41,20 @@ var O_api_v1_extract_upload_post = {
           contentType: "multipart/form-data"
         },
         cookie: cookie,
-        (body: parameter.body) if (parameter.body?)
+        (body: {
+          parts: {
+            file: {
+              headers: {
+                "Content-Disposition": {
+                  name: "file",
+                  filename: "document.pdf"
+                },
+                "Content-Type": "application/octet-stream"
+              },
+              content: parameter.body.file
+            }
+          }
+        }) if (parameter.body? and parameter.body.file?)
       })
       var statusCode = response.status as String
       ---
