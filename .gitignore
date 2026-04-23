@@ -55,3 +55,4 @@ build/
 #Test credentials
 **/automation-credentials.properties
 **/test-config.properties
+.history
