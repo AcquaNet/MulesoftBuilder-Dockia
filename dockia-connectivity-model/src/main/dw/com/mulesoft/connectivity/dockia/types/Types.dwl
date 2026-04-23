@@ -13,6 +13,21 @@ type T_ApiResponseMapStringObject = {
   duration?: Int64
 }
 
+type T_ProcessDocumentData = {
+  uid?: String,
+  message?: String,
+  task_id?: Int64
+}
+
+type T_ProcessDocumentResponse = {
+  success?: Boolean,
+  data?: T_ProcessDocumentData,
+  error?: String,
+  correlationId?: String,
+  timestamp?: String,
+  duration?: Int64
+}
+
 type T_ApiResponseExtractionTaskDetailResponse = {
   success?: Boolean,
   data?: T_ExtractionTaskDetailResponse,
