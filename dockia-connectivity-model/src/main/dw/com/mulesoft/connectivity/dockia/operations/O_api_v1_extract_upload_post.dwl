@@ -54,7 +54,7 @@ var O_api_v1_extract_upload_post = {
         }) if (fileBytes != null)
       })
       var statusCode = response.status as String
-      var parsedBody = (read(response.body as String, "application/json") default {}) as T_ApiResponseMapStringObject
+      var parsedBody = (response.body default {}) as T_ApiResponseMapStringObject
       var typedResponse = response update { case .body! -> parsedBody }
       ---
       if (response.status == 200)
