@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.mulesoft.connectivity.dockia</groupId>
         <artifactId>dockia-parent</artifactId>
-        <version>0.0.20-SNAPSHOT</version>
+        <version>0.0.21-SNAPSHOT</version>
     </parent>
 
     <artifactId>dockia-flow-connector-model</artifactId>

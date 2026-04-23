@@ -16,7 +16,7 @@ type O_api_v1_extract_upload_post_Type = {
   "200": HttpResponse<T_ProcessDocumentResponse>,
   errorResponse: ResultFailure<HttpResponse<Any>, UnexpectedError>,
   request: HttpRequestType<{| query: { source: String, subject?: String, "upload-uid"?: String, reprocess?: Boolean }, headers: Object, cookie: Object, body?: { file: String } |}>,
-  response: O_api_v1_extract_upload_post_Type."200"
+  response: HttpResponse<Any>
 }
 
 @OperationElement()
@@ -54,14 +54,12 @@ var O_api_v1_extract_upload_post = {
         }) if (fileBytes != null)
       })
       var statusCode = response.status as String
-      var parsedBody = (response.body default {}) as T_ProcessDocumentResponse
-      var typedResponse = response update { case .body! -> parsedBody }
       ---
       if (response.status == 200)
-        success(typedResponse)
+        success(response)
       else
         unexpectedFailure(
-          typedResponse,
+          response,
           { kind: statusCode, categories: [] }
         )
     }
