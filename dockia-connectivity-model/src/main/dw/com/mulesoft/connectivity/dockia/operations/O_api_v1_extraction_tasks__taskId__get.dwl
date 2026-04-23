@@ -21,8 +21,9 @@ type O_api_v1_extraction_tasks__taskId__get_Type = {
 
 @OperationElement()
 var O_api_v1_extraction_tasks__taskId__get = {
-  name: "getTaskById",
-  displayName: "getTaskById",
+  name: "getDocument",
+  displayName: "Get Document",
+  description: "Retrieves the data extraction results for a document by its task identifier. Use the task ID returned by 'Process Document' to track and obtain the extracted data.",
   executor: (parameter: O_api_v1_extraction_tasks__taskId__get_Type.request, connection: HttpConnection): Result<O_api_v1_extraction_tasks__taskId__get_Type.response, O_api_v1_extraction_tasks__taskId__get_Type.errorResponse> -> do {
       var uri = serializeUriParams(parameter.uri, {})
       var query = parameter.query default {} withSerializationConfig {}

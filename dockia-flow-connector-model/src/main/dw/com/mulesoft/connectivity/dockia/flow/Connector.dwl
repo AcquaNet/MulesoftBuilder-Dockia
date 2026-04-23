@@ -8,8 +8,6 @@ import flow_O_api_v1_extract_upload_post from com::mulesoft::connectivity::docki
 
 import flow_O_api_v1_extraction_tasks__taskId__get from com::mulesoft::connectivity::dockia::flow::operations::O_api_v1_extraction_tasks__taskId__get
 
-import flow_O_api_v1_oauth2__well_known_oauth_authorization_server_get from com::mulesoft::connectivity::dockia::flow::operations::O_api_v1_oauth2__well_known_oauth_authorization_server_get
-
 import FlowConnectorElement from com::mulesoft::connectivity::flow::Metadata
 
 @FlowConnectorElement()
@@ -34,9 +32,8 @@ var connector = {
   },
   testConnection: test,
   operations: {
-    discoveryMetadata: flow_O_api_v1_oauth2__well_known_oauth_authorization_server_get,
-    getCurrentUser: flow_O_api_v1_auth_me_get,
-    getTaskById: flow_O_api_v1_extraction_tasks__taskId__get
+    getUserInfo: flow_O_api_v1_auth_me_get,
+    getDocument: flow_O_api_v1_extraction_tasks__taskId__get
   },
   valueProviders: {},
   metadataProviders: {}

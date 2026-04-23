@@ -6,8 +6,6 @@ import anypoint_O_api_v1_extract_upload_post from com::mulesoft::connectivity::d
 
 import anypoint_O_api_v1_extraction_tasks__taskId__get from com::mulesoft::connectivity::dockia::anypoint::operations::O_api_v1_extraction_tasks__taskId__get
 
-import anypoint_O_api_v1_oauth2__well_known_oauth_authorization_server_get from com::mulesoft::connectivity::dockia::anypoint::operations::O_api_v1_oauth2__well_known_oauth_authorization_server_get
-
 import oauth2, test from com::mulesoft::connectivity::dockia::connections::Connections
 
 import MuleConnectorElement from com::mulesoft::connectivity::mule::Metadata
@@ -35,10 +33,9 @@ var connector = {
   },
   testConnection: test,
   operations: {
-    discoveryMetadata: anypoint_O_api_v1_oauth2__well_known_oauth_authorization_server_get,
-    getCurrentUser: anypoint_O_api_v1_auth_me_get,
-    getTaskById: anypoint_O_api_v1_extraction_tasks__taskId__get,
-    uploadPdf: anypoint_O_api_v1_extract_upload_post
+    getUserInfo: anypoint_O_api_v1_auth_me_get,
+    processDocument: anypoint_O_api_v1_extract_upload_post,
+    getDocument: anypoint_O_api_v1_extraction_tasks__taskId__get
   },
   valueProviders: {},
   metadataProviders: {}

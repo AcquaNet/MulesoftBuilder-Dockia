@@ -19,8 +19,9 @@ type O_api_v1_extract_upload_post_Type = {
 
 @OperationElement()
 var O_api_v1_extract_upload_post = {
-  name: "uploadPdf",
-  displayName: "uploadPdf",
+  name: "processDocument",
+  displayName: "Process Document",
+  description: "Uploads a PDF document to Dockia for AI-powered data extraction. Returns a task identifier to track the processing status and retrieve results.",
   executor: (parameter: O_api_v1_extract_upload_post_Type.request, connection: HttpConnection): Result<O_api_v1_extract_upload_post_Type.response, O_api_v1_extract_upload_post_Type.errorResponse> -> do {
       var query = parameter.query default {} withSerializationConfig {}
       var headers = serializeHeaders(parameter.headers default {}, {})

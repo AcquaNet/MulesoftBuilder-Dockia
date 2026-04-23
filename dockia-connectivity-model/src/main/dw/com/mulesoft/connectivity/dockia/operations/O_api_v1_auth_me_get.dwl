@@ -19,8 +19,9 @@ type O_api_v1_auth_me_get_Type = {
 
 @OperationElement()
 var O_api_v1_auth_me_get = {
-  name: "getCurrentUser",
-  displayName: "getCurrentUser",
+  name: "getUserInfo",
+  displayName: "Get User Info",
+  description: "Retrieves the profile information and roles of the currently authenticated Dockia user.",
   executor: (parameter: O_api_v1_auth_me_get_Type.request, connection: HttpConnection): Result<O_api_v1_auth_me_get_Type.response, O_api_v1_auth_me_get_Type.errorResponse> -> do {
       var query = parameter.query default {} withSerializationConfig {}
       var headers = serializeHeaders(parameter.headers default {}, {})
