@@ -2,9 +2,9 @@
 
 import OperationElement from com::mulesoft::connectivity::Metadata
 
-import Result, ResultFailure, UnexpectedError, success, unexpectedFailure from com::mulesoft::connectivity::Model
+import Error, Result, ResultFailure, UnexpectedError, failure, success, unexpectedFailure from com::mulesoft::connectivity::Model
 
-import T_ApiResponseMapStringObject, T_ProcessDocumentResponse from com::mulesoft::connectivity::dockia::types::Types
+import T_ProcessDocumentResponse from com::mulesoft::connectivity::dockia::types::Types
 
 import HttpConnection, HttpRequestType, HttpResponse from com::mulesoft::connectivity::transport::Http
 
@@ -14,10 +14,11 @@ import fromBase64 from dw::core::Binaries
 
 type O_api_v1_extract_upload_post_Type = {
   "200": HttpResponse<T_ProcessDocumentResponse>,
-  errorResponse: ResultFailure<HttpResponse<Any>, UnexpectedError>,
+  errorResponse: ResultFailure<HttpResponse<Any>, Error<String, "CLIENT_ERROR">> | ResultFailure<HttpResponse<Any>, UnexpectedError>,
   request: HttpRequestType<{| query: { source: String, subject?: String, "upload-uid"?: String, reprocess?: Boolean }, headers: Object, cookie: Object, body?: { file: String } |}>,
-  response: HttpResponse<Any>
+  response: O_api_v1_extract_upload_post_Type."200"
 }
+
 
 @OperationElement()
 var O_api_v1_extract_upload_post = {
@@ -55,13 +56,19 @@ var O_api_v1_extract_upload_post = {
       })
       var statusCode = response.status as String
       ---
-      if (response.status == 200)
+      if (response.status == 200 and response is O_api_v1_extract_upload_post_Type."200")
         success(response)
-      else
-        unexpectedFailure(
+      else if (response.status >= 400 and response.status < 500)
+        failure(
           response,
-          { kind: statusCode, categories: [] }
+          { kind: statusCode, categories: ["CLIENT_ERROR"] },
+          response.body.error default write(response.body, "application/json") default "Client error"
         )
+      else
+        unexpectedFailure(response, {
+          kind: statusCode,
+          categories: []
+        })
     }
 }
 
