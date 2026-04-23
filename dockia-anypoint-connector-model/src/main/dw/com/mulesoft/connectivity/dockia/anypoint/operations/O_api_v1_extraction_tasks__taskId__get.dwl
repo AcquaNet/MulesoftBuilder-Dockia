@@ -7,7 +7,7 @@ import alwaysMapsTo, extractRequestBody, fromMapping, mapsTo, withTransformer fr
 import O_api_v1_extraction_tasks__taskId__get, O_api_v1_extraction_tasks__taskId__get_Type from com::mulesoft::connectivity::dockia::operations::O_api_v1_extraction_tasks__taskId__get
 
 type anypoint_O_api_v1_extraction_tasks__taskId__get_request = {
-  taskId: O_api_v1_extraction_tasks__taskId__get_Type.request.uri.taskId
+  taskId: Number
 }
 
 var anypoint_O_api_v1_extraction_tasks__taskId__get_mapping = [

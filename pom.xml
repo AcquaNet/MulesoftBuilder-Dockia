@@ -22,7 +22,7 @@
         <connector.name>dockia</connector.name>
         <!-- This property can disable the validateConnectorModel from connectivity-flow-maven-plugin -->
         <skipFlowModelValidation>false</skipFlowModelValidation>
-        <revision>0.0.38-SNAPSHOT</revision>
+        <revision>0.0.40-SNAPSHOT</revision>
     </properties>
 
     <modules>
