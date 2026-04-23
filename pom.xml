@@ -6,7 +6,7 @@
 
     <groupId>com.mulesoft.connectivity.dockia</groupId>
     <artifactId>dockia-parent</artifactId>
-    <version>0.0.21-SNAPSHOT</version>
+    <version>${revision}</version>
     <name>dockia-connector</name>
     <packaging>pom</packaging>
 
@@ -22,6 +22,7 @@
         <connector.name>dockia</connector.name>
         <!-- This property can disable the validateConnectorModel from connectivity-flow-maven-plugin -->
         <skipFlowModelValidation>false</skipFlowModelValidation>
+        <revision>0.0.28-SNAPSHOT</revision>
     </properties>
 
     <modules>
