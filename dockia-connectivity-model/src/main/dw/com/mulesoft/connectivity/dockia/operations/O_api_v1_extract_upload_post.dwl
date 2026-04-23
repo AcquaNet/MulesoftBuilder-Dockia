@@ -13,7 +13,7 @@ import serializeCookies, serializeHeaders, withSerializationConfig from com::mul
 import fromBase64 from dw::core::Binaries
 
 type O_api_v1_extract_upload_post_Type = {
-  "200": HttpResponse<T_ApiResponseMapStringObject>,
+  "200": HttpResponse<Any>,
   errorResponse: ResultFailure<HttpResponse<Any>, UnexpectedError>,
   request: HttpRequestType<{| query: { source: String, subject?: String, "upload-uid"?: String, reprocess?: Boolean }, headers: Object, cookie: Object, body?: { file: String } |}>,
   response: O_api_v1_extract_upload_post_Type."200"
@@ -54,7 +54,7 @@ var O_api_v1_extract_upload_post = {
         }) if (fileBytes != null)
       })
       var statusCode = response.status as String
-      var parsedBody = (response.body default {}) as T_ApiResponseMapStringObject
+      var parsedBody = response.body default {}
       var typedResponse = response update { case .body! -> parsedBody }
       ---
       if (response.status == 200)
