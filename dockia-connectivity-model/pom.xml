@@ -13,7 +13,7 @@
     <parent>
         <groupId>com.mulesoft.connectivity.dockia</groupId>
         <artifactId>dockia-parent</artifactId>
-        <version>0.0.13-SNAPSHOT</version>
+        <version>0.0.16-SNAPSHOT</version>
     </parent>
 
     <artifactId>dockia-connectivity-model</artifactId>

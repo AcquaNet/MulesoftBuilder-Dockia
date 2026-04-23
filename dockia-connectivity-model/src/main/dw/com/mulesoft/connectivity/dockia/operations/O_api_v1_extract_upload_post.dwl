@@ -10,10 +10,12 @@ import HttpConnection, HttpRequestType, HttpResponse from com::mulesoft::connect
 
 import serializeCookies, serializeHeaders, withSerializationConfig from com::mulesoft::connectivity::transport::Serialization
 
+import fromBase64 from dw::core::Binaries
+
 type O_api_v1_extract_upload_post_Type = {
   "200": HttpResponse<T_ApiResponseMapStringObject>,
   errorResponse: ResultFailure<HttpResponse<Any>, UnexpectedError>,
-  request: HttpRequestType<{| query: { source: String, subject?: String, "upload-uid"?: String, reprocess?: Boolean }, headers: Object, cookie: Object, body?: { file: Binary } |}>,
+  request: HttpRequestType<{| query: { source: String, subject?: String, "upload-uid"?: String, reprocess?: Boolean }, headers: Object, cookie: Object, body?: { file: String } |}>,
   response: O_api_v1_extract_upload_post_Type."200"
 }
 
@@ -26,7 +28,7 @@ var O_api_v1_extract_upload_post = {
       var query = parameter.query default {} withSerializationConfig {}
       var headers = serializeHeaders(parameter.headers default {}, {})
       var cookie = serializeCookies(parameter.cookie default {}, {})
-      var fileBytes = if (parameter.body? and parameter.body.file?) (parameter.body.file as Binary) else null
+      var fileBytes = if (parameter.body? and parameter.body.file?) fromBase64(parameter.body.file as String) else null
       var response = connection({
         method: "POST",
         path: "/api/v1/extract/upload",
@@ -44,7 +46,7 @@ var O_api_v1_extract_upload_post = {
                   name: "file",
                   filename: "document.pdf"
                 },
-                "Content-Type": "application/octet-stream"
+                "Content-Type": "application/pdf"
               },
               content: fileBytes
             }
@@ -52,14 +54,16 @@ var O_api_v1_extract_upload_post = {
         }) if (fileBytes != null)
       })
       var statusCode = response.status as String
+      var parsedBody = (read(response.body as String, "application/json") default {}) as T_ApiResponseMapStringObject
+      var typedResponse = response update { case .body! -> parsedBody }
       ---
-      if (response.status == 200 and response is O_api_v1_extract_upload_post_Type."200")
-        success(response)
+      if (response.status == 200)
+        success(typedResponse)
       else
-        unexpectedFailure(response, {
-          kind: statusCode,
-          categories: []
-        })
+        unexpectedFailure(
+          typedResponse,
+          { kind: statusCode, categories: [] }
+        )
     }
 }
 

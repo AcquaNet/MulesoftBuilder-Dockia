@@ -13,8 +13,8 @@ type anypoint_O_api_v1_extract_upload_post_request = {
   subject?: O_api_v1_extract_upload_post_Type.request.query.subject,
   "upload-uid"?: O_api_v1_extract_upload_post_Type.request.query."upload-uid",
   reprocess?: O_api_v1_extract_upload_post_Type.request.query.reprocess,
-  "uploadPdf--body"?: @Label(value = "File (PDF Binary)")
-  Binary
+  "uploadPdf--body"?: @Label(value = "File (PDF as Base64 String)")
+  String
 }
 
 var anypoint_O_api_v1_extract_upload_post_mapping = [

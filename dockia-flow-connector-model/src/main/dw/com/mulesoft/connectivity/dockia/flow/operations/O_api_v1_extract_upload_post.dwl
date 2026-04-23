@@ -15,8 +15,8 @@ type flow_O_api_v1_extract_upload_post_request = {
   subject?: O_api_v1_extract_upload_post_Type.request.query.subject,
   "upload-uid"?: O_api_v1_extract_upload_post_Type.request.query."upload-uid",
   reprocess?: O_api_v1_extract_upload_post_Type.request.query.reprocess,
-  file?: @Label(value = "File (PDF Binary)")
-  Binary
+  file?: @Label(value = "File (PDF as Base64 String)")
+  String
 }
 
 var flow_O_api_v1_extract_upload_post_mapping = [
