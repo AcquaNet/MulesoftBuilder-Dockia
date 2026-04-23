@@ -26,12 +26,7 @@ var O_api_v1_extract_upload_post = {
       var query = parameter.query default {} withSerializationConfig {}
       var headers = serializeHeaders(parameter.headers default {}, {})
       var cookie = serializeCookies(parameter.cookie default {}, {})
-      var debugBody = log("[Dockia] processDocument - body received", {
-        hasBody:    parameter.body?,
-        hasFile:    (parameter.body.file?) default false,
-        bodyIsObj:  (parameter.body is Object) default false,
-        querySource: parameter.query.source default "N/A"
-      })
+      var fileBytes = if (parameter.body? and parameter.body.file?) (parameter.body.file as Binary) else null
       var response = connection({
         method: "POST",
         path: "/api/v1/extract/upload",
@@ -51,10 +46,10 @@ var O_api_v1_extract_upload_post = {
                 },
                 "Content-Type": "application/octet-stream"
               },
-              content: parameter.body.file
+              content: fileBytes
             }
           }
-        }) if (parameter.body? and parameter.body.file?)
+        }) if (fileBytes != null)
       })
       var statusCode = response.status as String
       ---

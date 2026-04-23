@@ -15,8 +15,8 @@ type flow_O_api_v1_extract_upload_post_request = {
   subject?: O_api_v1_extract_upload_post_Type.request.query.subject,
   "upload-uid"?: O_api_v1_extract_upload_post_Type.request.query."upload-uid",
   reprocess?: O_api_v1_extract_upload_post_Type.request.query.reprocess,
-  file?: @Label(value = "body")
-  O_api_v1_extract_upload_post_Type.request.body
+  file?: @Label(value = "File (PDF Binary)")
+  Binary
 }
 
 var flow_O_api_v1_extract_upload_post_mapping = [
@@ -26,7 +26,7 @@ var flow_O_api_v1_extract_upload_post_mapping = [
   "reprocess" mapsTo "query.reprocess",
   {} alwaysMapsTo "headers",
   {} alwaysMapsTo "cookie",
-  "file" mapsTo "body"
+  "file" mapsTo "body.file"
 ]
 
 @OperationElement()

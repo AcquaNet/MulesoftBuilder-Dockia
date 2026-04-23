@@ -13,8 +13,8 @@ type anypoint_O_api_v1_extract_upload_post_request = {
   subject?: O_api_v1_extract_upload_post_Type.request.query.subject,
   "upload-uid"?: O_api_v1_extract_upload_post_Type.request.query."upload-uid",
   reprocess?: O_api_v1_extract_upload_post_Type.request.query.reprocess,
-  "uploadPdf--body"?: @Label(value = "body")
-  O_api_v1_extract_upload_post_Type.request.body
+  "uploadPdf--body"?: @Label(value = "File (PDF Binary)")
+  Binary
 }
 
 var anypoint_O_api_v1_extract_upload_post_mapping = [
@@ -24,7 +24,7 @@ var anypoint_O_api_v1_extract_upload_post_mapping = [
   "reprocess" mapsTo "query.reprocess",
   {} alwaysMapsTo "headers",
   {} alwaysMapsTo "cookie",
-  "uploadPdf--body" mapsTo "body"
+  "uploadPdf--body" mapsTo "body.file"
 ]
 
 @OperationElement()
