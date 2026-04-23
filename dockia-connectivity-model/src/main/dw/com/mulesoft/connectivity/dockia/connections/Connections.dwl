@@ -106,7 +106,7 @@ var oauth2 = {
       })
       var accessToken = tokenResp.body.access_token as String
       var logExecute = log("[Dockia] Token acquired, executing API request", {
-        path: httpRequest.path,
+        path: httpRequest.path, 
         tokenStatus: tokenResp.status
       })
       ---
