@@ -4,8 +4,6 @@ import oauth2, test from com::mulesoft::connectivity::dockia::connections::Conne
 
 import flow_O_api_v1_auth_me_get from com::mulesoft::connectivity::dockia::flow::operations::O_api_v1_auth_me_get
 
-import flow_O_api_v1_extract_upload_post from com::mulesoft::connectivity::dockia::flow::operations::O_api_v1_extract_upload_post
-
 import flow_O_api_v1_extraction_tasks__taskId__get from com::mulesoft::connectivity::dockia::flow::operations::O_api_v1_extraction_tasks__taskId__get
 
 import FlowConnectorElement from com::mulesoft::connectivity::flow::Metadata
